@@ -193,16 +193,21 @@ export default {
     },
 
     methods: {
-      
       async initialize() {
         await this.$axios.get('articulos')
         .then(response => {
           this.articulos = response.data
-          console.log(JSON.stringify(this.articulos))
         })
         .catch( error => {
           console.log(error)
         })
+      },
+      refresh() {
+        this.form = {
+          descripcion: null,
+          precio: null,
+          stock: null,
+        }
       },
       editItem (item) {
         console.log('llego ediar')
@@ -212,8 +217,15 @@ export default {
       },
 
       deleteItem (item) {
-        this.editedIndex = this.articulos.indexOf(item)
-        // this.editedItem = Object.assign({}, item)
+        // console.log(item.id)
+        // this.editedIndex = this.articulos.indexOf(item)
+        this.$axios.delete(`articulos/${item.id}`, this.form)
+        .then(response => {
+          this.initialize(response)
+        })
+        .catch( error => {
+          console.log(error)
+        })
         this.dialogDelete = true
       },
 
@@ -233,16 +245,23 @@ export default {
       closeDelete () {
         this.dialogDelete = false
         this.$nextTick(() => {
-          // this.editedItem = Object.assign({}, this.defaultItem)
           this.editedIndex = -1
         })
       },
 
-      save () {
+      async save () {
         if (this.editedIndex > -1) {
-          Object.assign(this.articulos[this.editedIndex], this.editedItem)
+          console.log('EDITAR')
+          // Object.assign(this.articulos[this.editedIndex], this.editedItem)
         } else {
-          this.articulos.push(this.editedItem)
+          await this.$axios.post('articulos', this.form)
+          .then(response => {
+            this.initialize(response)
+            this.refresh()
+          })
+          .catch( error => {
+            console.log(error)
+          })
         }
         this.close()
       },
