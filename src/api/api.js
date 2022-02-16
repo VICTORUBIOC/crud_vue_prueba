@@ -3,7 +3,7 @@ import Vue from 'vue'
 
 
 Vue.prototype.$axios = axios.create({
-  baseURL: 'localhost:8082/',
+  baseURL: 'http://localhost:8081/api', 
   headers: {
     'Accept':' application/json',
     'Content-Type': 'application/json'

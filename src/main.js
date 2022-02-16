@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import App from './App.vue'
 import vuetify from './plugins/vuetify'
-import './src/api/api.js'
+import  './api/api.js'
 
 Vue.config.productionTip = false
 
