@@ -1,0 +1,10 @@
+services:
+  vue:
+    image: "node:14"
+    user: "node"
+    working_dir: /app
+    ports:
+      - 8083:8080
+    volumes:
+      - ./:/app
+    command: "npm run serve"
