@@ -1,5 +1,14 @@
 <template>
   <div class="container">
+    <v-alert
+      dense
+      outlined
+      dismissible
+      v-model="mostrarAlerta"
+      :type="tipoAlerta"
+    >
+      {{mensaje}}
+    </v-alert>
     <v-card>
       <v-card-title>
         ARTICULOS
@@ -7,7 +16,6 @@
       <v-card-subtitle>
         CRUD de articulos
       </v-card-subtitle>
-
       <v-data-table
         :headers="headers"
         :items="articulos"
@@ -37,14 +45,19 @@
                   v-bind="attrs"
                   v-on="on"
                 >
-                  NUEVO ARTICULO
+                  <v-icon
+                    small
+                  >
+                    mdi-plus
+                  </v-icon>
+                  CREAR ARTICULO
                 </v-btn>
               </template>
               <v-card>
                 <v-card-title>
                   <span class="text-h5">{{ formTitle }}</span>
                 </v-card-title>
-
+                <v-divider></v-divider>
                 <v-card-text>
                   <v-container>
                     <v-row>
@@ -80,20 +93,20 @@
                       </v-col>
                     </v-row>
                   </v-container>
-                </v-card-text>
-
+                </v-card-text>  
+                <v-divider></v-divider>
                 <v-card-actions>
-                  <v-spacer></v-spacer>
                   <v-btn
-                    color="blue darken-1"
+                    color="red darken-1"
                     text
                     @click="close"
                   >
                     CANCELAR
                   </v-btn>
+                  <v-spacer></v-spacer>
                   <v-btn
-                    color="blue darken-1"
-                    text
+                    color="primary darken-1"
+                    
                     @click="save"
                   >
                     GUARDAR
@@ -104,11 +117,11 @@
             <v-dialog v-model="dialogDelete" max-width="500px">
               <v-card>
                 <v-card-title class="text-h5">Seguro de elimnar este artículo?</v-card-title>
+                <v-divider></v-divider>
                 <v-card-actions>
+                  <v-btn color="red darken-1" text @click="closeDelete">CANCELAR</v-btn>
                   <v-spacer></v-spacer>
-                  <v-btn color="blue darken-1" text @click="closeDelete">Cancel</v-btn>
-                  <v-btn color="blue darken-1" text @click="deleteItemConfirm">OK</v-btn>
-                  <v-spacer></v-spacer>
+                  <v-btn color="primary "  @click="deleteItemConfirm">ELIMINAR</v-btn>
                 </v-card-actions>
               </v-card>
             </v-dialog>
@@ -140,6 +153,9 @@
 export default {
   name:"Articulos",
   data: () => ({
+      mostrarAlerta : false,
+      tipoAlerta : 'success',
+      mensaje : '',
       dialog: false,
       dialogDelete: false,
       headers: [
@@ -155,18 +171,12 @@ export default {
       ],
       articulos: [],
       editedIndex: -1,
+      articulo : {},
       form: {
         descripcion: null,
         precio: null,
         stock: null,
       },
-      // editedItem: {
-      //   name: '',
-      //   calories: 0,
-      //   fat: 0,
-      //   carbs: 0,
-      //   protein: 0,
-      // }
     }),
 
     computed: {
@@ -186,13 +196,14 @@ export default {
 
     created () {
       this.initialize()
-      // this.$axios.get('/articulos')
-      // this.$axios.get(`https://jsonplaceholder.typicode.com/albums`).then(response => {
-        // console.log(response.data)
-      // })
     },
 
     methods: {
+      alert(tipo, msj) {
+        this.mostrarAlerta = true
+        this.tipoAlerta = tipo
+        this.mensaje = msj
+      },
       async initialize() {
         await this.$axios.get('articulos')
         .then(response => {
@@ -210,38 +221,39 @@ export default {
         }
       },
       editItem (item) {
-        console.log('llego ediar')
         this.editedIndex = this.articulos.indexOf(item)
-        // this.editedItem = Object.assign({}, item)
+        this.articulo = item
+        this.form = {
+          descripcion: item.descripcion,
+          precio: item.precio,
+          stock: item.stock,
+        }
         this.dialog = true
       },
 
       deleteItem (item) {
-        // console.log(item.id)
-        // this.editedIndex = this.articulos.indexOf(item)
-        this.$axios.delete(`articulos/${item.id}`, this.form)
-        .then(response => {
-          this.initialize(response)
-        })
-        .catch( error => {
-          console.log(error)
-        })
+        this.articulo = item
         this.dialogDelete = true
       },
 
-      deleteItemConfirm () {
-        this.articulos.splice(this.editedIndex, 1)
-        this.closeDelete()
+      async deleteItemConfirm () {
+        await this.$axios.delete(`articulos/${this.articulo.id}`, this.form)
+        .then(response => {
+          this.initialize(response)
+          this.closeDelete()
+          this.alert('success', 'Se eliminó correctamente');
+        })
+        .catch( error => {
+          console.log(error)
+            this.alert('error', 'Hubo un error al eliminar el registro, por favor intente nuevamente');
+        })
       },
-
       close () {
         this.dialog = false
         this.$nextTick(() => {
-          // this.editedItem = Object.assign({}, this.defaultItem)
           this.editedIndex = -1
         })
       },
-
       closeDelete () {
         this.dialogDelete = false
         this.$nextTick(() => {
@@ -251,15 +263,27 @@ export default {
 
       async save () {
         if (this.editedIndex > -1) {
-          console.log('EDITAR')
-          // Object.assign(this.articulos[this.editedIndex], this.editedItem)
+          console.log('debe q ser el PUT')
+          console.log(`articulos/${this.articulo.id}`)
+          await this.$axios.put(`articulos/${this.articulo.id}`, this.form)
+          .then(response => {
+            this.initialize(response)
+            this.alert('success', 'Se editó correctamente');
+            this.refresh()
+          })
+          .catch( error => {
+            this.alert('error', 'Hubo un error, no se pudo actualizar el artículo.')
+            console.log(error)
+          })
         } else {
           await this.$axios.post('articulos', this.form)
           .then(response => {
             this.initialize(response)
+            this.alert('success', 'Se creó el artículo correctamente');
             this.refresh()
           })
           .catch( error => {
+            this.alert('error', 'Hubo un error, no se pudo crear el artículo.')
             console.log(error)
           })
         }
